@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>İmpostor Oyunu – Çoklu Kategori</title>
+  <style>
+    :root {
+      --bg0:#050812;
+      --bg1:#0b1020;
+      --card:rgba(18,26,51,.88);
+      --stroke:rgba(255,255,255,.10);
+      --text:#eef1ff;
+      --muted:#a6b0d7;
+      --accent:#7c5cff;
+      --accent2:#22d3ee;
+      --danger:#ff4d6d;
+      --ok:#7CFFB2;
+      --shadow:0 18px 45px rgba(0,0,0,.45);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      background:
+        radial-gradient(900px 500px at 15% 10%, rgba(124,92,255,.28), transparent 60%),
+        radial-gradient(800px 520px at 85% 25%, rgba(34,211,238,.22), transparent 55%),
+        radial-gradient(700px 480px at 40% 95%, rgba(255,77,109,.16), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+    .app{width:min(880px,100%);}
+    .card{
+      background:var(--card);
+      border:1px solid var(--stroke);
+      border-radius:20px;
+      box-shadow:var(--shadow);
+      padding:18px;
+      position:relative;
+      overflow:hidden;
+    }
+    .card:before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:linear-gradient(120deg, rgba(124,92,255,.35), rgba(34,211,238,.25), rgba(255,77,109,.20));
+      filter:blur(18px);
+      opacity:.18;
+      z-index:0;
+    }
+    .card > *{position:relative; z-index:1;}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    h1{font-size:22px;margin:0;letter-spacing:.2px}
+    .tag{display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.18);color:var(--muted);font-size:13px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .field{flex:1;min-width:220px}
+    label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+    input,textarea{
+      width:100%; padding:12px 12px; border-radius:14px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(7,10,20,.55);
+      color:var(--text);
+      outline:none;
+    }
+    input:focus,textarea:focus{
+      border-color:rgba(124,92,255,.55);
+      box-shadow:0 0 0 3px rgba(124,92,255,.16);
+    }
+    textarea{min-height:78px;resize:vertical}
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    button{
+      border:0; border-radius:14px; padding:12px 14px; cursor:pointer;
+      color:white; font-weight:750;
+      background:linear-gradient(135deg, rgba(124,92,255,1), rgba(34,211,238,1));
+      box-shadow:0 12px 18px rgba(124,92,255,.20);
+      transition:transform .08s ease, filter .15s ease;
+    }
+    button:hover{filter:brightness(1.06)}
+    button:active{transform:translateY(1px)}
+    button.secondary{background:rgba(255,255,255,.10);box-shadow:none;font-weight:650}
+    button.danger{background:linear-gradient(135deg, rgba(255,77,109,1), rgba(124,92,255,1)); box-shadow:0 12px 18px rgba(255,77,109,.14)}
+    .divider{height:1px;background:rgba(255,255,255,.10);margin:14px 0}
+    .hint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.35}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.18); color:var(--muted); font-size:13px}
+    .roleBox{margin-top:12px;padding:16px;border-radius:18px;border:1px dashed rgba(255,255,255,.18);background:rgba(7,10,20,.45);text-align:center}
+    .big{font-size:30px;margin:6px 0 2px}
+    .word{font-size:30px;font-weight:900;letter-spacing:.2px}
+    .impostor{color:var(--danger)}
+    .ok{color:var(--ok)}
+    .hidden{display:none}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .catGrid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));
+      gap:10px;
+      margin-top:10px;
+    }
+    .catItem{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);
+      cursor:pointer;
+      user-select:none;
+    }
+    .catItem input{width:18px;height:18px;accent-color:var(--accent2);}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="card" id="screen-setup">
+      <header>
+        <h1>🕵️‍♂️ İmpostor Oyunu</h1>
+        <div class="tag">🎲 Toplam · <b id="count">0</b> konu</div>
+      </header>
+
+      <div class="row">
+        <div class="field">
+          <label>Oynanacak Kategoriler (çoklu seçebilirsin)</label>
+          <div class="btns" style="margin-top:6px">
+            <button class="secondary" id="selAll" type="button">Hepsini Seç</button>
+            <button class="secondary" id="selNone" type="button">Hepsini Kaldır</button>
+            <button class="secondary" id="selMixed" type="button">Karışık (Öneri)</button>
+          </div>
+          <div class="catGrid" id="catGrid">
+            
+        <label class="catItem">
+          <input type="checkbox" class="catChk" value="Kişiler" checked />
+          <span>Kişiler</span>
+        </label>
+
+        <label class="catItem">
+          <input type="checkbox" class="catChk" value="Hayvanlar" checked />
+          <span>Hayvanlar</span>
+        </label>
+
+        <label class="catItem">
+          <input type="checkbox" class="catChk" value="Nesneler" checked />
+          <span>Nesneler</span>
+        </label>
+
+        <label class="catItem">
+          <input type="checkbox" class="catChk" value="Yemekler" checked />
+          <span>Yemekler</span>
+        </label>
+
+        <label class="catItem">
+          <input type="checkbox" class="catChk" value="Meslekler" checked />
+          <span>Meslekler</span>
+        </label>
+
+        <label class="catItem">
+          <input type="checkbox" class="catChk" value="Sporlar" checked />
+          <span>Sporlar</span>
+        </label>
+
+        <label class="catItem">
+          <input type="checkbox" class="catChk" value="Süper Güçler" checked />
+          <span>Süper Güçler</span>
+        </label>
+
+        <label class="catItem">
+          <input type="checkbox" class="catChk" value="Şehirler" checked />
+          <span>Şehirler</span>
+        </label>
+
+        <label class="catItem">
+          <input type="checkbox" class="catChk" value="Ülkeler" checked />
+          <span>Ülkeler</span>
+        </label>
+          </div>
+          <div class="hint">Örn: Sadece <b>Meslekler</b> ve <b>Yemekler</b> işaretlersen oyun sadece onlardan seçer.</div>
+        </div>
+
+        <div class="field">
+          <label class="pill" style="width:100%;justify-content:space-between">
+            <span>🧩 İmpostor'a zor ipucu ver</span>
+            <span style="display:flex;align-items:center;gap:8px">
+              <span class="hint" style="margin:0">Opsiyonel</span>
+              <input id="hintToggle" type="checkbox" style="width:18px;height:18px;accent-color:var(--accent2)" />
+            </span>
+          </label>
+
+          <div class="row">
+            <div class="field">
+              <label for="players">Oyuncu Sayısı</label>
+              <input id="players" type="number" min="3" max="30" value="6" />
+            </div>
+            <div class="field">
+              <label for="impostors">İmpostor Sayısı</label>
+              <input id="impostors" type="number" min="1" max="10" value="1" />
+              <div class="hint">İmpostor sayısı, oyuncu sayısından küçük olmalı.</div>
+            </div>
+          </div>
+
+          <div class="btns">
+            <button id="start" type="button">Oyunu Başlat 🚀</button>
+            <button class="secondary" id="how" type="button">Nasıl Oynanır?</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <label for="addBox">Listeye eklemek istediğin kişi/konu (isteğe bağlı ipucu)</label>
+      <textarea id="addBox" placeholder="Format:
+İsim | Zor ipucu"></textarea>
+      <div class="btns">
+        <button class="secondary" id="addBtn" type="button">Seçili Kategorilere Ekle ➕</button>
+        <button class="secondary" id="resetBtn" type="button">Hazır Listelere Dön</button>
+      </div>
+      <div class="hint">Not: Eklediğin şeyler, şu an seçili olan <b>ilk</b> kategoriye eklenir. Hiç kategori seçili değilse “Kişiler”e eklenir.</div>
+    </div>
+
+    <div class="card hidden" id="screen-pass">
+      <header>
+        <h1>📱 Telefonu ver</h1>
+        <div class="tag">Sıra: <b id="pIndex">1</b> / <b id="pTotal">6</b></div>
+      </header>
+      <div class="divider"></div>
+      <h1 id="passTitle" style="margin:0 0 6px">Telefonu Oyuncu 1’e ver</h1>
+      <p class="hint">Oyuncu ekrana bakmadan telefonu alsın. Hazır olunca rolü göster.</p>
+      <div class="btns">
+        <button id="showRole" type="button">Rolü Göster 👀</button>
+        <button class="secondary" id="abort" type="button">İptal</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="screen-role">
+      <header>
+        <h1>🧾 Rol</h1>
+        <div class="tag">Oyuncu: <b id="who">1</b></div>
+      </header>
+      <div class="roleBox" id="roleBox"></div>
+      <div class="btns">
+        <button id="hideNext" type="button">Gizle ve Devam Et 🔄</button>
+        <button class="danger" id="restart" type="button">Baştan Başlat</button>
+      </div>
+    </div>
+
+    <div class="card hidden" id="screen-done">
+      <header>
+        <h1>✅ Roller Dağıtıldı</h1>
+        <div class="tag">Kategoriler: <span id="catState">-</span> · İpucu: <span id="hintState">Kapalı</span></div>
+      </header>
+      <p class="hint">Burada impostorlar görünmez. Oyun sonunda “Oyunu Bitir”e basınca açılır.</p>
+      <div class="btns">
+        <button id="finish" class="danger" type="button">Oyunu Bitir 🏁</button>
+        <button id="backSetup" class="secondary" type="button">Yeni Oyun</button>
+      </div>
+      <div id="reveal" class="roleBox hidden" style="text-align:left">
+        <div class="pill">Seçilen konu: <b id="finalWord"></b></div>
+        <div class="divider"></div>
+        <div>
+          <div class="big">İmpostor Oyuncular</div>
+          <div id="finalImpostors" class="mono"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const ITEMS = [{"name": "Didier Drogba", "hint": "Ceza sahasında yıpratıcı bir güç; Afrika kökenli golcü.", "category": "Kişiler"}, {"name": "Wesley Sneijder", "hint": "Topu ayağına alınca oyunu sakinleştiren Hollandalı.", "category": "Kişiler"}, {"name": "Felipe Melo", "hint": "Orta sahada sertliğiyle tanınan Brezilyalı savaşçı.", "category": "Kişiler"}, {"name": "Fernando Muslera", "hint": "Kalenin son sözü; refleksleriyle tanınır.", "category": "Kişiler"}, {"name": "Burak Yılmaz", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Selçuk İnan", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Hakan Balta", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Semih Kaya", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Umut Bulut", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Younès Belhanda", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Bafétimbi Gomis", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Garry Rodrigues", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Bruma", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Sofiane Feghouli", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Ryan Donk", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Mariano", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Serdar Aziz", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Lucas Torreira", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Mauro Icardi", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Dries Mertens", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Wilfried Zaha", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Hakim Ziyech", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Kerem Aktürkoğlu", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Barış Alper Yılmaz", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Yunus Akgün", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Victor Nelsson", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Davinson Sánchez", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Abdülkerim Bardakcı", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Kaan Ayhan", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Sacha Boey", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Sergio Oliveira", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Berkan Kutlu", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Robin van Persie", "hint": "Sol ayağıyla akılda kalan Hollandalı bitirici.", "category": "Kişiler"}, {"name": "Dirk Kuyt", "hint": "Çalışkanlığı ve presiyle öne çıkan Hollandalı kanat/forvet.", "category": "Kişiler"}, {"name": "Nani", "hint": "Kenar çizgisinden içeri kıvrılan şutlarıyla bilinen Portekizli.", "category": "Kişiler"}, {"name": "Moussa Sow", "hint": "Kritik gollerle hatırlanan Senegal kökenli forvet.", "category": "Kişiler"}, {"name": "Emre Belözoğlu", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Volkan Demirel", "hint": "Uzun yıllar kaleyi korumuş yerli eldiven.", "category": "Kişiler"}, {"name": "Caner Erkin", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Diego Ribas", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Josef de Souza", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Martin Škrtel", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Mathieu Valbuena", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Giuliano", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Eljif Elmas", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Kim Min-jae", "hint": "Savunmada güç ve hız birleşimi; Koreli stoper profili.", "category": "Kişiler"}, {"name": "Attila Szalai", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Miguel Crespo", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "João Pedro", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Mesut Özil", "hint": "Pas ve vizyonuyla bilinen 10 numara profili.", "category": "Kişiler"}, {"name": "Michy Batshuayi", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Edin Džeko", "hint": "Boy avantajıyla ceza sahasında etkili Bosnalı santrfor.", "category": "Kişiler"}, {"name": "Dušan Tadić", "hint": "Solak tekniğiyle oyunu yönlendiren Sırp hücumcu.", "category": "Kişiler"}, {"name": "Fred", "hint": "Orta alanda enerjisi ve koşusuyla bilinen Brezilyalı.", "category": "Kişiler"}, {"name": "İsmail Yüksek", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "İrfan Can Kahveci", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Mert Hakan Yandaş", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Altay Bayındır", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Dominik Livaković", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Sebastian Szymański", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Ferdi Kadıoğlu", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Bright Osayi-Samuel", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Ricardo Quaresma", "hint": "Dış ayak ortalarıyla efsaneleşmiş Portekizli kanat.", "category": "Kişiler"}, {"name": "Mario Gomez", "hint": "Klasik 9 numara; Alman santrfor.", "category": "Kişiler"}, {"name": "Anderson Talisca", "hint": "Uzaktan şut ve duran topta etkili Brezilyalı 10 numara.", "category": "Kişiler"}, {"name": "Vincent Aboubakar", "hint": "Güçlü fiziğiyle öne çıkan Kamerunlu forvet.", "category": "Kişiler"}, {"name": "Pepe", "hint": "Tecrübe ve sertlik; Portekizli stoper.", "category": "Kişiler"}, {"name": "Domagoj Vida", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Ryan Babel", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Cenk Tosun", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Atiba Hutchinson", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Oğuzhan Özyakup", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Gökhan Gönül", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Adriano", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Tolgay Arslan", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Dusko Tošić", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Rodolfo", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Marcelo", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Rachid Ghezzal", "hint": "Sol ayaklı oyun kuran kanat profili.", "category": "Kişiler"}, {"name": "Georges-Kevin Nkoudou", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Miralem Pjanić", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Dele Alli", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Valentin Rosier", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Romain Saïss", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Mert Günok", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Necip Uysal", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Uğurcan Çakır", "hint": "Kale deyince akla gelen yerli isimlerden biri.", "category": "Kişiler"}, {"name": "Anthony Nwakaeme", "hint": "Tekniğiyle taraftarı ayağa kaldıran kanat/forvet.", "category": "Kişiler"}, {"name": "Abdülkadir Ömür", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Yusuf Yazıcı", "hint": "Solak; uzaktan şut ve oyun aklıyla bilinir.", "category": "Kişiler"}, {"name": "Alexander Sørloth", "hint": "Fizik gücüyle ceza sahasında etkili Norveçli.", "category": "Kişiler"}, {"name": "José Sosa", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Marek Hamšík", "hint": "Orta sahada liderlik; Slovak yıldız.", "category": "Kişiler"}, {"name": "Andreas Cornelius", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Edin Višća", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Anastasios Bakasetas", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Stefano Denswil", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Vitor Hugo", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Bruno Peres", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Óscar Cardozo", "hint": "Ceza sahası bitiriciliğiyle bilinen Paraguaylı.", "category": "Kişiler"}, {"name": "Onur Kıvrak", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Tolga Zengin", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Giray Kaçar", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Volkan Şen", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Olcay Şahan", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Caleb Ekuban", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Enis Bardhi", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Paul Onuachu", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Cristiano Ronaldo", "hint": "Gol ve rekor kelimeleriyle anılan Portekizli yıldız.", "category": "Kişiler"}, {"name": "Lionel Messi", "hint": "Arjantin’in sol ayağıyla efsaneleşen 10 numarası.", "category": "Kişiler"}, {"name": "Neymar", "hint": "Çalımları ve şovuyla bilinen Brezilyalı hücumcu.", "category": "Kişiler"}, {"name": "Kylian Mbappé", "hint": "Hızıyla savunmaları dağıtan Fransız forvet.", "category": "Kişiler"}, {"name": "Erling Haaland", "hint": "Fizik gücü ve bitiriciliğiyle öne çıkan Norveçli santrfor.", "category": "Kişiler"}, {"name": "Mohamed Salah", "hint": "Sağdan içeri kat edip bitirmesiyle tanınan Mısırlı yıldız.", "category": "Kişiler"}, {"name": "Karim Benzema", "hint": "İnce dokunuşlarıyla bilinen Fransız santrfor.", "category": "Kişiler"}, {"name": "Robert Lewandowski", "hint": "Ceza sahasında “bitirici” denince akla gelen Polonyalı.", "category": "Kişiler"}, {"name": "Luka Modrić", "hint": "Orta sahada oyunun temposunu yöneten Hırvat maestro.", "category": "Kişiler"}, {"name": "Andrés Iniesta", "hint": "Dar alanda kaybolan, pasla açan İspanyol orta saha.", "category": "Kişiler"}, {"name": "Xavi", "hint": "Pas oyununun sembollerinden bir İspanyol oyun kurucu.", "category": "Kişiler"}, {"name": "Ronaldinho", "hint": "Gülümsemesi ve akıl almaz çalımlarıyla hatırlanan Brezilyalı.", "category": "Kişiler"}, {"name": "Zinedine Zidane", "hint": "Zarafetiyle bilinen Fransız oyun kurucu; hem saha içinde hem kenarda.", "category": "Kişiler"}, {"name": "David Beckham", "hint": "Orta ve frikikleriyle meşhur İngiliz futbol ikonı.", "category": "Kişiler"}, {"name": "Ronaldo Nazário", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Diego Maradona", "hint": "Arjantin futbolunun tartışmasız efsanelerinden biri.", "category": "Kişiler"}, {"name": "Pelé", "hint": "Futbol tarihinin en çok anılan isimlerinden; Brezilya’nın simgesi.", "category": "Kişiler"}, {"name": "Sergio Ramos", "hint": "Savunmada sertliği ve kritik golleriyle bilinen İspanyol.", "category": "Kişiler"}, {"name": "Gianluigi Buffon", "hint": "Kale deyince akla gelen İtalyan efsanesi.", "category": "Kişiler"}, {"name": "Thierry Henry", "hint": "Hızı ve şık bitirişleriyle anılan Fransız forvet.", "category": "Kişiler"}, {"name": "Albert Einstein", "hint": "Görelilik denince ilk akla gelen bilim insanı.", "category": "Kişiler"}, {"name": "Isaac Newton", "hint": "Yerçekimi ve klasik fiziğin temel taşlarından.", "category": "Kişiler"}, {"name": "Charles Darwin", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Nikola Tesla", "hint": "Elektrik ve icatlar deyince adı geçen vizyoner.", "category": "Kişiler"}, {"name": "Marie Curie", "hint": "Bilimde çığır açmış; radyoaktiviteyle anılan öncü.", "category": "Kişiler"}, {"name": "Mustafa Kemal Atatürk", "hint": "Türkiye’nin modernleşme sürecinin merkezindeki lider.", "category": "Kişiler"}, {"name": "Napoleon Bonaparte", "hint": "Avrupa tarihini şekillendiren Fransız komutan.", "category": "Kişiler"}, {"name": "Julius Caesar", "hint": "Roma’da iktidarın zirvesine yürümüş bir isim.", "category": "Kişiler"}, {"name": "Winston Churchill", "hint": "II. Dünya Savaşı döneminde İngiltere’nin siması.", "category": "Kişiler"}, {"name": "Nelson Mandela", "hint": "Uzun mücadelenin ardından özgürlüğün sembolü olmuş lider.", "category": "Kişiler"}, {"name": "Mahatma Gandhi", "hint": "Şiddetsiz direniş deyince akla gelen isim.", "category": "Kişiler"}, {"name": "Martin Luther King Jr.", "hint": "Eşitlik mücadelesinin güçlü sesi.", "category": "Kişiler"}, {"name": "Abraham Lincoln", "hint": "ABD tarihinde kritik bir dönemin başkanı.", "category": "Kişiler"}, {"name": "Barack Obama", "hint": "ABD’de modern dönemin en bilinen liderlerinden.", "category": "Kişiler"}, {"name": "Vladimir Putin", "hint": "Rusya siyasetinde uzun yıllardır etkili figür.", "category": "Kişiler"}, {"name": "Elizabeth II", "hint": "İngiliz monarşisinin uzun süreli sembolü.", "category": "Kişiler"}, {"name": "Cleopatra", "hint": "Antik Mısır’da güç ve siyasetle anılan kraliçe.", "category": "Kişiler"}, {"name": "Fatih Sultan Mehmet", "hint": "İstanbul’un fethiyle tarihe geçen Osmanlı padişahı.", "category": "Kişiler"}, {"name": "Kanuni Sultan Süleyman", "hint": "Osmanlı’nın zirve döneminin padişahı.", "category": "Kişiler"}, {"name": "II. Abdülhamid", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "William Shakespeare", "hint": "Tiyatro ve edebiyatta en çok anılan kalemlerden.", "category": "Kişiler"}, {"name": "Fyodor Dostoyevsky", "hint": "İnsan psikolojisini derin işleyen Rus yazar.", "category": "Kişiler"}, {"name": "Victor Hugo", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "J. R. R. Tolkien", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Agatha Christie", "hint": "Gizem romanlarının “kraliçesi” olarak bilinir.", "category": "Kişiler"}, {"name": "Charlie Chaplin", "hint": "Sessiz sinemanın unutulmaz yüzü.", "category": "Kişiler"}, {"name": "Marilyn Monroe", "hint": "Hollywood’un ikonik yıldızlarından.", "category": "Kişiler"}, {"name": "Leonardo DiCaprio", "hint": "Modern sinemanın en bilinen başrollerinden.", "category": "Kişiler"}, {"name": "Tom Cruise", "hint": "Aksiyon ve gişe deyince akla gelen isim.", "category": "Kişiler"}, {"name": "Brad Pitt", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Angelina Jolie", "hint": "Hem oyunculuk hem insani çalışmalarla bilinir.", "category": "Kişiler"}, {"name": "Scarlett Johansson", "hint": "Büyük yapımlarda sık görülen bir aktris.", "category": "Kişiler"}, {"name": "Meryl Streep", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Morgan Freeman", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Robert De Niro", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Michael Jackson", "hint": "Pop müziğin en ikonik sahne isimlerinden.", "category": "Kişiler"}, {"name": "Madonna", "hint": "Pop kültürde uzun yıllar etkili bir figür.", "category": "Kişiler"}, {"name": "The Beatles", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Elvis Presley", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Taylor Swift", "hint": "Dünya çapında turneleriyle konuşulan şarkıcı.", "category": "Kişiler"}, {"name": "Eminem", "hint": "Hızlı flow ve sert sözlerle bilinen rapçi.", "category": "Kişiler"}, {"name": "Beyoncé", "hint": "Sahne performansıyla öne çıkan dünya yıldızı.", "category": "Kişiler"}, {"name": "Rihanna", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Adele", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Drake", "hint": "Bu isim spor dünyasında çokça duyulmuş; detayları konuşmalardan çıkar.", "category": "Kişiler"}, {"name": "Elon Musk", "hint": "Teknoloji ve uzay girişimleriyle gündemdeki iş insanı.", "category": "Kişiler"}, {"name": "Bill Gates", "hint": "Yazılım dünyasında dev bir dönemin kurucu yüzü.", "category": "Kişiler"}, {"name": "Steve Jobs", "hint": "Tüketici teknolojisinde tasarım ve sunumuyla iz bırakan isim.", "category": "Kişiler"}, {"name": "Mark Zuckerberg", "hint": "Sosyal medya çağının en bilinen kurucularından.", "category": "Kişiler"}, {"name": "Oprah Winfrey", "hint": "TV dünyasında güçlü bir medya figürü.", "category": "Kişiler"}, {"name": "Aslan", "hint": "Savanın “tepe” avcısı; güç ve liderlikle anılır.", "category": "Hayvanlar"}, {"name": "Kurt", "hint": "Sürüsüyle hareket eden yırtıcı; uluma akla gelir.", "category": "Hayvanlar"}, {"name": "Kartal", "hint": "Yüksekten avlanan; keskin görüşlü bir kuş.", "category": "Hayvanlar"}, {"name": "Yunus", "hint": "Denizde zeki ve sosyal bir canlı.", "category": "Hayvanlar"}, {"name": "Fil", "hint": "Büyük cüssesine rağmen hafızasıyla bilinir.", "category": "Hayvanlar"}, {"name": "Zürafa", "hint": "Ulaşamadığı dal azdır; boyu belirleyicidir.", "category": "Hayvanlar"}, {"name": "Kaplan", "hint": "Çizgileriyle tanınan yalnız avcı.", "category": "Hayvanlar"}, {"name": "Penguen", "hint": "Uçmaz ama suyun içinde adeta “uçar”.", "category": "Hayvanlar"}, {"name": "Timsah", "hint": "Suda pusu kuran, çok eski bir türün temsilcisi.", "category": "Hayvanlar"}, {"name": "Baykuş", "hint": "Gece aktif; sessiz ve isabetli.", "category": "Hayvanlar"}, {"name": "Tilki", "hint": "Hikâyelerde sık geçen “kurnaz” karakter.", "category": "Hayvanlar"}, {"name": "At", "hint": "İnsanla en uzun yol arkadaşlığı yapanlardan.", "category": "Hayvanlar"}, {"name": "Deve", "hint": "Zor iklimin taşıyıcısı; suyu idareli kullanır.", "category": "Hayvanlar"}, {"name": "Arı", "hint": "Tek başına değil; düzenli bir topluluğun parçası.", "category": "Hayvanlar"}, {"name": "Ahtapot", "hint": "Kolları ve zekâsıyla dikkat çeker.", "category": "Hayvanlar"}, {"name": "Panda", "hint": "Siyah-beyaz; sakin ve seçici beslenen.", "category": "Hayvanlar"}, {"name": "Saat", "hint": "Zamanı anlatır ama ona hükmedemez.", "category": "Nesneler"}, {"name": "Anahtar", "hint": "Erişimi belirler; doğru yerde anlam kazanır.", "category": "Nesneler"}, {"name": "Kitap", "hint": "Sessizce çok şey söyler; sayfalar arasında.", "category": "Nesneler"}, {"name": "Telefon", "hint": "Uzağı yakına çeviren küçük cihaz.", "category": "Nesneler"}, {"name": "Ayna", "hint": "Gördüğünü tersine çevirir; gerçeğe benzer.", "category": "Nesneler"}, {"name": "Lamba", "hint": "Karanlığı azaltır; ışıkla var olur.", "category": "Nesneler"}, {"name": "Kalem", "hint": "İz bırakır ama ses çıkarmaz.", "category": "Nesneler"}, {"name": "Bıçak", "hint": "Keskinliğiyle iş görür; dikkat ister.", "category": "Nesneler"}, {"name": "Çanta", "hint": "Yükü gizler; taşımayı kolaylaştırır.", "category": "Nesneler"}, {"name": "Bilgisayar", "hint": "Hesabı hızlandırır; zihnin uzantısı gibi.", "category": "Nesneler"}, {"name": "Gözlük", "hint": "Detayı geri getirir; bakışı netleştirir.", "category": "Nesneler"}, {"name": "Şemsiye", "hint": "Havaya karşı taşınan kalkan.", "category": "Nesneler"}, {"name": "Kapı", "hint": "Bir alanı diğerinden ayıran eşik.", "category": "Nesneler"}, {"name": "Makas", "hint": "İki parçayla keser; birlikte çalışır.", "category": "Nesneler"}, {"name": "Pusula", "hint": "Yönü söyler; kararı sana bırakır.", "category": "Nesneler"}, {"name": "Kilit", "hint": "Anahtarsız inatçı olan.", "category": "Nesneler"}, {"name": "Pizza", "hint": "Fırından çıkan daire; dilim dilim paylaşılır.", "category": "Yemekler"}, {"name": "Hamburger", "hint": "Ekmek arasında katmanlı bir klasik.", "category": "Yemekler"}, {"name": "Sushi", "hint": "Pişmeden sunulan; denizle ilişkili.", "category": "Yemekler"}, {"name": "Kebap", "hint": "Ateşle buluşan et geleneği.", "category": "Yemekler"}, {"name": "Makarna", "hint": "Kaynar suda şekil kazanır; sosla tamamlanır.", "category": "Yemekler"}, {"name": "Pilav", "hint": "Taneleri ayrı olursa övülür.", "category": "Yemekler"}, {"name": "Lahmacun", "hint": "İnce hamur üstü baharatlı karışım.", "category": "Yemekler"}, {"name": "Mantı", "hint": "Küçük hamur bohçaları; emek ister.", "category": "Yemekler"}, {"name": "Çorba", "hint": "Başlangıçların “ısıtan” üyesi.", "category": "Yemekler"}, {"name": "Börek", "hint": "Kat kat hamurun işi; çıtır sever.", "category": "Yemekler"}, {"name": "Döner", "hint": "Dönen şişten kesilerek servis edilir.", "category": "Yemekler"}, {"name": "Salata", "hint": "Çiğ ya da hafif; karışım işi.", "category": "Yemekler"}, {"name": "Köfte", "hint": "Yuvarlak ya da uzun; kıvam meselesi.", "category": "Yemekler"}, {"name": "Baklava", "hint": "Kat, şerbet, sabır.", "category": "Yemekler"}, {"name": "Çikolata", "hint": "Kakaodan gelen “tatlı bağımlılık”.", "category": "Yemekler"}, {"name": "Menemen", "hint": "Tava işi; sabah masasına yakışır.", "category": "Yemekler"}, {"name": "Doktor", "hint": "İnsan bedenine dair kararlar alır.", "category": "Meslekler"}, {"name": "Öğretmen", "hint": "Bilgiyi aktarır; merakı büyütür.", "category": "Meslekler"}, {"name": "Mühendis", "hint": "Sorunu parçalar; çözümü kurar.", "category": "Meslekler"}, {"name": "Avukat", "hint": "Hukuk dilini kullanarak savunur.", "category": "Meslekler"}, {"name": "Aşçı", "hint": "Lezzeti mutfakta inşa eder.", "category": "Meslekler"}, {"name": "Mimar", "hint": "Mekânı hayalden gerçeğe çevirir.", "category": "Meslekler"}, {"name": "Pilot", "hint": "Gökyüzünde sorumluluk taşır.", "category": "Meslekler"}, {"name": "Polis", "hint": "Kamu düzeni için sahadadır.", "category": "Meslekler"}, {"name": "Hemşire", "hint": "Bakım ve takip işin temelidir.", "category": "Meslekler"}, {"name": "Yazılımcı", "hint": "Fikirleri koda dönüştürür.", "category": "Meslekler"}, {"name": "Gazeteci", "hint": "Bilgiyi süzer; kamuya taşır.", "category": "Meslekler"}, {"name": "Psikolog", "hint": "Zihnin süreçleriyle ilgilenir.", "category": "Meslekler"}, {"name": "Elektrikçi", "hint": "Akımı güvenli hale getirir.", "category": "Meslekler"}, {"name": "Fotoğrafçı", "hint": "Anı karelere hapseder.", "category": "Meslekler"}, {"name": "Muhasebeci", "hint": "Rakamlarla düzen kurar.", "category": "Meslekler"}, {"name": "Veteriner", "hint": "İnsandan farklı bir hastaya bakar.", "category": "Meslekler"}, {"name": "Futbol", "hint": "Top ve iki kale; herkesin bildiği klasik.", "category": "Sporlar"}, {"name": "Basketbol", "hint": "Potaya giden yollar hızlıdır.", "category": "Sporlar"}, {"name": "Voleybol", "hint": "File üstü oyun; takım uyumu şart.", "category": "Sporlar"}, {"name": "Tenis", "hint": "Raketle oynanır; çizgi önemlidir.", "category": "Sporlar"}, {"name": "Yüzme", "hint": "Suda ilerleme; nefes ve tempo.", "category": "Sporlar"}, {"name": "Atletizm", "hint": "Koşu–atlama–atma; temelin temeli.", "category": "Sporlar"}, {"name": "Boks", "hint": "Eldivenli mücadele; strateji de var.", "category": "Sporlar"}, {"name": "Güreş", "hint": "Temaslı güç sporu; denge belirler.", "category": "Sporlar"}, {"name": "Kayak", "hint": "Karda hız; kontrol olmazsa olmaz.", "category": "Sporlar"}, {"name": "Snowboard", "hint": "Tek tahta; stil ve denge.", "category": "Sporlar"}, {"name": "Bisiklet", "hint": "Pedalla ilerler; yokuş öğretir.", "category": "Sporlar"}, {"name": "Masa Tenisi", "hint": "Refleks ve açı oyunu.", "category": "Sporlar"}, {"name": "Hentbol", "hint": "Elle oynanan hızlı takım sporu.", "category": "Sporlar"}, {"name": "Badminton", "hint": "Hafif “top” ama hızlı oyun.", "category": "Sporlar"}, {"name": "Okçuluk", "hint": "Hedefe odaklanma; sabır ister.", "category": "Sporlar"}, {"name": "Satranç", "hint": "Koşu yok; savaş tahtada.", "category": "Sporlar"}, {"name": "Uçabilme", "hint": "Yerden bağımsız hareket.", "category": "Süper Güçler"}, {"name": "Görünmezlik", "hint": "Gözden kaybolma; iz bırakmama.", "category": "Süper Güçler"}, {"name": "Zamanı Durdurma", "hint": "Anı sabitleme; herkes donmuşken.", "category": "Süper Güçler"}, {"name": "Işınlanma", "hint": "Mesafeyi yok sayma.", "category": "Süper Güçler"}, {"name": "Telepati", "hint": "Zihinler arası iletişim.", "category": "Süper Güçler"}, {"name": "Süper Hız", "hint": "Saniyeleri uzatır gibi hareket.", "category": "Süper Güçler"}, {"name": "Süper Güç", "hint": "Fizik sınırlarını zorlar.", "category": "Süper Güçler"}, {"name": "Zihin Kontrolü", "hint": "İradeye etki etme.", "category": "Süper Güçler"}, {"name": "Şekil Değiştirme", "hint": "Formu değiştirme; kimlik oyunu.", "category": "Süper Güçler"}, {"name": "Ölümsüzlük", "hint": "Zamana direnme.", "category": "Süper Güçler"}, {"name": "Ateş Kontrolü", "hint": "Isıyla “oynama”.", "category": "Süper Güçler"}, {"name": "Su Kontrolü", "hint": "Akışı yönetme.", "category": "Süper Güçler"}, {"name": "Hava Kontrolü", "hint": "Rüzgârı yönlendirme.", "category": "Süper Güçler"}, {"name": "Şifa", "hint": "Hasarı hızla onarma.", "category": "Süper Güçler"}, {"name": "Duvarların İçinden Geçme", "hint": "Katı olanı “yok sayma”.", "category": "Süper Güçler"}, {"name": "Geleceği Görme", "hint": "Olmadan önce bilme.", "category": "Süper Güçler"}, {"name": "İstanbul", "hint": "İki kıta arasında; geçişin şehri.", "category": "Şehirler"}, {"name": "Ankara", "hint": "Siyasi merkez; iç Anadolu’nun kalbi.", "category": "Şehirler"}, {"name": "İzmir", "hint": "Ege kıyısında; rüzgârı meşhur.", "category": "Şehirler"}, {"name": "Paris", "hint": "Sanat ve “ışık”la anılır.", "category": "Şehirler"}, {"name": "Londra", "hint": "Tarih + finans; sisli imajı var.", "category": "Şehirler"}, {"name": "Roma", "hint": "Antik miras; taş üstüne taş.", "category": "Şehirler"}, {"name": "Berlin", "hint": "Duvarın gölgesiyle hatırlanan geçmiş.", "category": "Şehirler"}, {"name": "New York", "hint": "“Hiç uyumayan” diye anılan metropol.", "category": "Şehirler"}, {"name": "Tokyo", "hint": "Gelenekle teknolojiyi yan yana tutar.", "category": "Şehirler"}, {"name": "Seul", "hint": "Modern Asya metropolü; K‑kültür etkisi.", "category": "Şehirler"}, {"name": "Moskova", "hint": "Geniş ve soğuk; kırmızı meydan çağrışımı.", "category": "Şehirler"}, {"name": "Madrid", "hint": "İspanya’nın içindeki büyük merkez.", "category": "Şehirler"}, {"name": "Barselona", "hint": "Deniz + mimari; şehir ruhu güçlü.", "category": "Şehirler"}, {"name": "Dubai", "hint": "Çöl ortası gökdelenler; lüks imajı.", "category": "Şehirler"}, {"name": "Sydney", "hint": "Limanıyla ve ikonik yapısıyla bilinir.", "category": "Şehirler"}, {"name": "Prag", "hint": "Orta Avrupa’da masal gibi şehir.", "category": "Şehirler"}, {"name": "Türkiye", "hint": "İki kıta arasında köprü; kültür harmanı.", "category": "Ülkeler"}, {"name": "Almanya", "hint": "Sanayi, düzen ve üretim çağrışımı.", "category": "Ülkeler"}, {"name": "Fransa", "hint": "Sanat ve mutfakla anılır.", "category": "Ülkeler"}, {"name": "İtalya", "hint": "Tarih, moda ve “lezzet” üçlüsü.", "category": "Ülkeler"}, {"name": "İspanya", "hint": "Akdeniz kültürü; ritmi yüksek.", "category": "Ülkeler"}, {"name": "ABD", "hint": "Kıtalararası güç; çok eyaletli yapı.", "category": "Ülkeler"}, {"name": "Brezilya", "hint": "Renk, ritim ve futbol çağrışımı.", "category": "Ülkeler"}, {"name": "Arjantin", "hint": "Güney Amerika’da tutku ve futbol.", "category": "Ülkeler"}, {"name": "Japonya", "hint": "Teknoloji + ritüel dengesi.", "category": "Ülkeler"}, {"name": "Çin", "hint": "Nüfus ve üretim ölçeği büyük.", "category": "Ülkeler"}, {"name": "Rusya", "hint": "Çok geniş coğrafya.", "category": "Ülkeler"}, {"name": "İngiltere", "hint": "Ada; monarşi ve küresel etki.", "category": "Ülkeler"}, {"name": "Mısır", "hint": "Antik uygarlık; nehir etkisi.", "category": "Ülkeler"}, {"name": "Yunanistan", "hint": "Felsefenin beşiği diye anılır.", "category": "Ülkeler"}, {"name": "Kanada", "hint": "Soğuk ve geniş; kuzey imajı.", "category": "Ülkeler"}, {"name": "Norveç", "hint": "Fiyortlar ve kuzey ışıkları çağrışımı.", "category": "Ülkeler"}];
+
+  const $ = (id) => document.getElementById(id);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+  const scrSetup = $("screen-setup");
+  const scrPass  = $("screen-pass");
+  const scrRole  = $("screen-role");
+  const scrDone  = $("screen-done");
+
+  const inpPlayers   = $("players");
+  const inpImpostors = $("impostors");
+  const hintToggle   = $("hintToggle");
+
+  const addBox    = $("addBox");
+  const addBtn    = $("addBtn");
+  const resetBtn  = $("resetBtn");
+  const countEl   = $("count");
+
+  const btnStart    = $("start");
+  const btnHow      = $("how");
+  const btnAbort    = $("abort");
+  const btnShowRole = $("showRole");
+  const btnHideNext = $("hideNext");
+  const btnRestart  = $("restart");
+  const btnBackSetup= $("backSetup");
+  const btnFinish   = $("finish");
+
+  const btnSelAll  = $("selAll");
+  const btnSelNone = $("selNone");
+  const btnSelMixed= $("selMixed");
+
+  const pIndex = $("pIndex");
+  const pTotal = $("pTotal");
+  const passTitle = $("passTitle");
+  const who = $("who");
+  const roleBox = $("roleBox");
+
+  const revealBox = $("reveal");
+  const finalWord = $("finalWord");
+  const finalImpostors = $("finalImpostors");
+  const hintState = $("hintState");
+  const catState  = $("catState");
+
+  const DEFAULT_ITEMS = ITEMS.slice();
+  let list = DEFAULT_ITEMS.slice();
+  let state = null;
+
+  function showScreen(name){
+    scrSetup.classList.toggle("hidden", name!=="setup");
+    scrPass.classList.toggle("hidden", name!=="pass");
+    scrRole.classList.toggle("hidden", name!=="role");
+    scrDone.classList.toggle("hidden", name!=="done");
+  }
+
+  function normalizeList(){
+    const map = new Map();
+    for (const it of list) {
+      const name = (it.name||"").trim();
+      if(!name) continue;
+      const key = name.toLowerCase();
+      map.set(key, {
+        name,
+        hint: (it.hint||"").trim(),
+        category: (it.category||"Kişiler").trim() || "Kişiler"
+      });
+    }
+    list = Array.from(map.values());
+    countEl.textContent = String(list.length);
+  }
+
+  function resetAll(){
+    list = DEFAULT_ITEMS.slice();
+    normalizeList();
+  }
+
+  function selectedCategories(){
+    return $$(".catChk").filter(x => x.checked).map(x => x.value);
+  }
+
+  function poolForSelected(){
+    const cats = selectedCategories();
+    if(cats.length === 0) return list;
+    return list.filter(x => cats.includes(x.category || "Kişiler"));
+  }
+
+  function niceCatLabel(){
+    const cats = selectedCategories();
+    if(cats.length === 0) return "Tümü (Karışık)";
+    if(cats.length > 3) return cats.slice(0,3).join(", ") + " +" + String(cats.length-3);
+    return cats.join(", ");
+  }
+
+  function randInt(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function pickRandom(arr){ return arr[randInt(0, arr.length - 1)]; }
+  function pickDistinctIndices(n, k){
+    const set = new Set();
+    while(set.size < k) set.add(randInt(1, n));
+    return Array.from(set).sort((a,b)=>a-b);
+  }
+
+  function validate(players, impostors, pool){
+    if(players < 3) return "Oyuncu sayısı en az 3 olmalı.";
+    if(impostors < 1) return "İmpostor sayısı en az 1 olmalı.";
+    if(impostors >= players) return "İmpostor sayısı, oyuncu sayısından küçük olmalı.";
+    if(pool.length < 2) return "Seçili kategorilerde yeterli konu yok. (En az 2)";
+    return null;
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, (m)=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
+
+  function startGame(){
+    const players = Number(inpPlayers.value || 0);
+    const impostors = Number(inpImpostors.value || 0);
+
+    const pool = poolForSelected();
+    const err = validate(players, impostors, pool);
+    if(err){ alert(err); return; }
+
+    const item = pickRandom(pool);
+    const impostorPlayers = pickDistinctIndices(players, impostors);
+
+    state = {
+      players,
+      item,
+      impostorPlayers,
+      current: 1,
+      hintEnabled: !!hintToggle.checked,
+      catsLabel: niceCatLabel()
+    };
+
+    hintState.textContent = state.hintEnabled ? "Açık" : "Kapalı";
+    catState.textContent  = state.catsLabel;
+
+    revealBox.classList.add("hidden");
+    finalWord.textContent = "";
+    finalImpostors.textContent = "";
+
+    pTotal.textContent = String(players);
+    updatePassScreen();
+    showScreen("pass");
+  }
+
+  function updatePassScreen(){
+    pIndex.textContent = String(state.current);
+    passTitle.textContent = "Telefonu Oyuncu " + String(state.current) + "’e ver";
+  }
+
+  function renderRole(){
+    const isImpostor = state.impostorPlayers.includes(state.current);
+    who.textContent = String(state.current);
+
+    if(isImpostor){
+      const hintText = state.item.hint || "İpucu yok. (Eklerken “İsim | Zor ipucu” yazabilirsin.)";
+      const hintHtml = state.hintEnabled
+        ? "<div class='divider'></div><div class='hint'>🧩 Zor ipucu: " + escapeHtml(hintText) + "</div>"
+        : "";
+
+      roleBox.innerHTML =
+        "<div class='big impostor'>❌ SEN İMPOSTORSUN</div>" +
+        "<div class='hint'>Konuyu görmüyorsun. Konuşmalardan tahmin etmeye çalış.</div>" +
+        hintHtml;
+    } else {
+      roleBox.innerHTML =
+        "<div class='big ok'>✅ SEN MASUMSUN</div>" +
+        "<div class='divider'></div>" +
+        "<div class='word'>" + escapeHtml(state.item.name) + "</div>" +
+        "<div class='hint'>Bu konu impostor hariç herkeste aynıdır.</div>";
+    }
+  }
+
+  function showRoleScreen(){ renderRole(); showScreen("role"); }
+
+  function hideAndNext(){
+    state.current += 1;
+    if(state.current > state.players){
+      showScreen("done");
+      return;
+    }
+    updatePassScreen();
+    showScreen("pass");
+  }
+
+  function restart(){
+    if(confirm("Baştan başlatılsın mı?")){ state = null; showScreen("setup"); }
+  }
+
+  function syncImpostorMax(){
+    const p = Math.max(3, Number(inpPlayers.value || 3));
+    inpImpostors.max = String(Math.max(1, p - 1));
+    if(Number(inpImpostors.value) >= p) inpImpostors.value = String(Math.max(1, p - 1));
+  }
+
+  btnSelAll.addEventListener("click", () => {
+    $$(".catChk").forEach(c => c.checked = true);
+  });
+  btnSelNone.addEventListener("click", () => {
+    $$(".catChk").forEach(c => c.checked = false);
+  });
+  btnSelMixed.addEventListener("click", () => {
+    const pick = new Set(["Meslekler","Yemekler","Sporlar","Kişiler"]);
+    $$(".catChk").forEach(c => c.checked = pick.has(c.value));
+  });
+
+  btnStart.addEventListener("click", startGame);
+  btnHow.addEventListener("click", () => {
+    alert(
+`Nasıl oynanır?
+1) İstediğin kategorileri işaretle (örn: sadece Meslekler + Yemekler).
+2) Oyuncu ve impostor sayısını seç.
+3) (Opsiyonel) İmpostor ipucunu aç.
+4) Telefon elden ele:
+   - “Rolü Göster” → oyuncu rolünü görür
+   - “Gizle ve Devam Et” → sonraki oyuncu
+5) Oyun sonunda “Oyunu Bitir” → impostorlar açılır.`
+    );
+  });
+  btnAbort.addEventListener("click", () => {
+    if(confirm("Oyunu iptal etmek istiyor musun?")){ state = null; showScreen("setup"); }
+  });
+  btnShowRole.addEventListener("click", showRoleScreen);
+  btnHideNext.addEventListener("click", hideAndNext);
+  btnRestart.addEventListener("click", restart);
+  btnBackSetup.addEventListener("click", () => showScreen("setup"));
+
+  btnFinish.addEventListener("click", () => {
+    if(!state) return;
+    finalWord.textContent = state.item.name;
+    finalImpostors.textContent = state.impostorPlayers.map(n => "Oyuncu " + n).join(", ");
+    revealBox.classList.remove("hidden");
+  });
+
+  addBtn.addEventListener("click", () => {
+    const text = addBox.value.trim();
+    if(!text) return;
+
+    const cats = selectedCategories();
+    const targetCat = (cats[0] || "Kişiler");
+
+    const lines = text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+    for(const line of lines){
+      const parts = line.split("|").map(s=>s.trim());
+      const name = parts[0];
+      const h = parts.slice(1).join("|").trim();
+      if(!name) continue;
+      list.push({
+        name,
+        hint: h || "Konuyu direkt söylemeyen, dolaylı bir ipucu.",
+        category: targetCat
+      });
+    }
+    normalizeList();
+    addBox.value = "";
+  });
+
+  resetBtn.addEventListener("click", () => {
+    if(confirm("Hazır listelere dönülsün mü? Eklediklerin silinir.")) resetAll();
+  });
+
+  inpPlayers.addEventListener("input", syncImpostorMax);
+  syncImpostorMax();
+
+  normalizeList();
+})();
+</script>
+</body>
+</html>
